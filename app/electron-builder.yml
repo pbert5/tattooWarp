@@ -1,0 +1,58 @@
+appId: com.tattoowarp.app
+productName: TattooWarp
+copyright: Copyright © TattooWarp contributors
+
+directories:
+  buildResources: build
+  output: release
+
+# No native (compiled) node modules in this project, so there's nothing for
+# electron-rebuild to do — skip it. It otherwise re-downloads Electron's
+# native headers/binary as a separate step, which is redundant with the
+# download electron-builder already does for packaging.
+npmRebuild: false
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  # main.cjs also sets the BrowserWindow icon at runtime from this path
+  # (matters for Linux window-manager taskbar icons); everything else about
+  # the OS-level app icon comes from the icon: settings below instead.
+  - build/icon.png
+
+# GitHub App icons: a single 1024x1024 build/icon.png is enough — each OS
+# target only needs conversion (ICNS/ICO) on its own runner, which happens
+# automatically in the CI matrix (mac target builds on macOS, win on Windows).
+mac:
+  category: public.app-category.graphics-design
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+linux:
+  icon: build/icon.png
+  category: Graphics
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+publish:
+  provider: github
