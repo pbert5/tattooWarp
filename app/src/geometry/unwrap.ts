@@ -94,6 +94,19 @@ export function surfacePointUniform(
   return p1.lerp(p2, local);
 }
 
+/** Outward unit normal at normalized (angleFrac, vFrac), for extruding a projected decal off the surface. */
+export function surfaceNormalUniform(
+  grid: UnwrapGrid,
+  angleFrac: number,
+  vFrac: number,
+): THREE.Vector3 {
+  const { row, nextRow, local } = rowAt(grid, vFrac);
+  const center = new THREE.Vector3().lerpVectors(row.center, nextRow.center, local);
+  const point = surfacePointUniform(grid, angleFrac, vFrac);
+  const normal = point.clone().sub(center);
+  return normal.lengthSq() > 1e-12 ? normal.normalize() : normal.set(0, 0, 1);
+}
+
 function pointOnRow(row: UnwrapRow, theta: number): THREE.Vector3 {
   const samples = row.radii.length;
   const f = (theta / (Math.PI * 2)) * samples;

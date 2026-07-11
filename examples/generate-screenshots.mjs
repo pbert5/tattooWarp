@@ -33,29 +33,28 @@ await page.goto(BASE_URL);
 await page.waitForSelector(".app-shell");
 await page.screenshot({ path: `${OUT}/01-empty.png` });
 
-// --- Import the sample forearm mesh ---
+// --- Import the sample forearm mesh (2ft / 24in, inches) ---
 const fileInput = page.locator('input[type=file][accept*=".obj"]');
 await fileInput.setInputFiles(path.join(EX, "sample-forearm.obj"));
-await page.waitForTimeout(1500);
+await page.waitForTimeout(1200);
 await page.screenshot({ path: `${OUT}/02-model-imported-centerline.png` });
 
-// --- Add a couple more rings ---
+// --- Rings spaced ~3in apart (within the 2-4in typical range) on a 24in limb: 9 rings ---
 await page.locator(".hamburger").click();
-await page.locator("input[type=number]").fill("3");
+await page.locator("input[type=number]").fill("9");
 await page.keyboard.press("Tab");
-await page.waitForTimeout(500);
+await page.waitForTimeout(400);
 await page.locator(".hamburger").click(); // close menu
-await page.waitForTimeout(300);
-await page.screenshot({ path: `${OUT}/03-three-rings.png` });
+await page.waitForTimeout(200);
+await page.screenshot({ path: `${OUT}/03-rings.png` });
 
 // --- Enter crop mode ---
 await page.getByRole("button", { name: "Crop", exact: true }).click();
-await page.waitForTimeout(500);
+await page.waitForTimeout(400);
 await page.screenshot({ path: `${OUT}/04-crop-mode.png` });
 await page.getByRole("button", { name: "Cancel", exact: true }).click();
-await page.waitForTimeout(300);
+await page.waitForTimeout(200);
 
-// --- Import graphics: one static band, one tiling motif ---
 async function importGraphic(filename) {
   const menuButton = page.getByRole("button", { name: "Import graphic…" });
   if (!(await menuButton.isVisible().catch(() => false))) {
@@ -68,12 +67,15 @@ async function importGraphic(filename) {
   await page.waitForTimeout(400);
 }
 
+// --- Import a static wrap-around band (a "band" design, projected in red by default) ---
 await importGraphic("static-band.svg");
-await importGraphic("tiling-diamond.svg");
-await page.waitForTimeout(500);
-await page.screenshot({ path: `${OUT}/05-graphics-imported.png` });
+await page.waitForTimeout(600);
+await page.screenshot({ path: `${OUT}/05-band-projected.png` });
 
-// Select the tiling-diamond graphic node (order depends on layer sort) and enable tiling
+// --- Import a tiling motif, enable tiling: fills the gaps between the bands (avoid mode) ---
+await importGraphic("tiling-diamond.svg");
+await page.waitForTimeout(300);
+
 const items = page.locator(".graphic-tree-item");
 const nameInputs = page.locator(".graphic-tree-item input.graphic-name");
 const nameCount = await nameInputs.count();
@@ -91,29 +93,28 @@ await tilingCheckbox.check();
 await page.waitForTimeout(600);
 await page.screenshot({ path: `${OUT}/06-tiling-enabled.png` });
 
-// Nudge tiling options: staggered on, tighter unit size, so the layout looks lively
 const staggeredCheckbox = diamondItem.locator(".tiling-options input[type=checkbox]");
 if (await staggeredCheckbox.count()) await staggeredCheckbox.check();
 const unitSizeSlider = diamondItem.locator(".tiling-options input[type=range]").first();
-if (await unitSizeSlider.count()) await unitSizeSlider.fill("0.55");
+if (await unitSizeSlider.count()) await unitSizeSlider.fill("1.4");
 await page.waitForTimeout(600);
 await page.screenshot({ path: `${OUT}/07-tiling-staggered.png` });
 
-// Adjust a ring slider on the right sidebar
-const ringSlider = page.locator(".sidebar-right input[type=range]").first();
-if (await ringSlider.count()) {
-  await ringSlider.fill("70");
-  await page.waitForTimeout(400);
-}
-await page.screenshot({ path: `${OUT}/08-ring-height-adjusted.png` });
+// --- Select the band again to show its unwrapped/morphed preview (top-left panes) ---
+const bandItem = items.nth(diamondIndex === 0 ? 1 : 0);
+await bandItem.click();
+await page.waitForTimeout(600);
+await page.evaluate(() => document.querySelector(".sidebar-left")?.scrollTo(0, 0));
+await page.waitForTimeout(200);
+await page.screenshot({ path: `${OUT}/08-unwrapped-band.png` });
 
-// Orbit the viewer a bit for a nicer final overview shot
+// Orbit the viewer for a final hero overview shot with both band + tiling visible
 const canvas = page.locator(".viewer canvas");
 const box = await canvas.boundingBox();
 if (box) {
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2 - 40, { steps: 10 });
+  await page.mouse.move(box.x + box.width / 2 + 150, box.y + box.height / 2 - 30, { steps: 10 });
   await page.mouse.up();
   await page.waitForTimeout(400);
 }

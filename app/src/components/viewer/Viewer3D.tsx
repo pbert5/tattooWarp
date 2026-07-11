@@ -1,11 +1,54 @@
-import { useMemo, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import { Line, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useProjectStore } from "../../state/store";
 import { crossSectionAt } from "../../geometry/centerline";
 import { CropGizmo, type CropGizmoHandle, type CropMode } from "./CropGizmo";
-import { TilingPreview } from "./TilingPreview";
+import { DesignProjection } from "./DesignProjection";
+
+interface OrbitControlsLike {
+  target: THREE.Vector3;
+  update: () => void;
+}
+
+/**
+ * Reframes the camera to fit whatever mesh is currently loaded, on every
+ * import/crop/undo/reset (each of which produces a new `mesh` object). The
+ * default camera position is only sized for small unit-scale meshes; a scan
+ * authored in real-world units (inches, meters, mm) would otherwise render
+ * either as a tiny speck or as a wall filling the whole view.
+ */
+function CameraFit() {
+  const mesh = useProjectStore((s) => s.mesh);
+  const { camera, controls } = useThree();
+
+  useEffect(() => {
+    if (!mesh) return;
+    mesh.geometry.computeBoundingSphere();
+    const sphere = mesh.geometry.boundingSphere;
+    if (!sphere || sphere.radius <= 0) return;
+
+    const center = sphere.center.clone();
+    const radius = sphere.radius;
+    const persp = camera as THREE.PerspectiveCamera;
+    const fitDistance = (radius / Math.sin((persp.fov * Math.PI) / 360)) * 1.25;
+    const dir = new THREE.Vector3(0.35, 0.2, 1).normalize();
+
+    camera.position.copy(center.clone().addScaledVector(dir, fitDistance));
+    camera.near = Math.max(radius / 1000, 1e-4);
+    camera.far = fitDistance + radius * 50;
+    camera.updateProjectionMatrix();
+
+    const orbit = controls as unknown as OrbitControlsLike | null;
+    if (orbit?.target) {
+      orbit.target.copy(center);
+      orbit.update();
+    }
+  }, [mesh, camera, controls]);
+
+  return null;
+}
 
 function CenterlineOverlay() {
   const centerline = useProjectStore((s) => s.centerline);
@@ -20,6 +63,10 @@ function RingCircles() {
 
   const loops = useMemo(() => {
     if (!mesh || !centerline) return [];
+    // Scale the center-dot marker off the centerline's own length rather
+    // than a fixed absolute size, so it stays visible whether the mesh is
+    // authored in inches, meters, or unitless small demo coordinates.
+    const markerRadius = Math.max(centerline.length * 0.006, 1e-4);
     return rings.map((ring) => {
       const section = crossSectionAt(mesh, centerline, ring.t, 64);
       const pts: THREE.Vector3[] = [];
@@ -33,7 +80,7 @@ function RingCircles() {
             .addScaledVector(section.v, Math.sin(theta) * r),
         );
       }
-      return { id: ring.id, points: pts, center: section.center };
+      return { id: ring.id, points: pts, center: section.center, markerRadius };
     });
   }, [mesh, centerline, rings]);
 
@@ -43,7 +90,7 @@ function RingCircles() {
         <group key={loop.id}>
           <Line points={loop.points} color="#22d3ee" lineWidth={2} />
           <mesh position={loop.center}>
-            <sphereGeometry args={[Math.max(0.002, 0.01)]} />
+            <sphereGeometry args={[loop.markerRadius]} />
             <meshBasicMaterial color="#22d3ee" />
           </mesh>
         </group>
@@ -104,11 +151,12 @@ export function Viewer3D() {
         {mesh && <MeshView />}
         <CenterlineOverlay />
         <RingCircles />
-        <TilingPreview />
+        <DesignProjection />
         {cropMode && mesh && (
           <CropGizmo ref={gizmoRef} mesh={mesh} mode={cropSubMode} />
         )}
         <OrbitControls makeDefault enabled={!cropMode} />
+        <CameraFit />
       </Canvas>
 
       <div className="viewer-toolbar viewer-toolbar-bottom">

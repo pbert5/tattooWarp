@@ -2,18 +2,20 @@
 // elliptical tube standing in for a 3D limb scan, for demo/screenshot
 // purposes. Plain OBJ text, no dependencies.
 //
-// Scaled to sit inside the app's default camera frustum (camera at z=3,
-// fov 45) since the viewer doesn't auto-frame imported meshes yet.
+// Modeled in inches (a real forearm scan would be): 24" wrist-to-elbow (2
+// feet), circumference tapering ~6.3" -> ~11.9" (radius ~1.0" -> ~1.9"),
+// which is within a typical adult forearm range. The viewer auto-frames the
+// camera to whatever mesh is imported, so real-world units work directly.
 //
 // Usage: node examples/generate-limb.mjs [output-path]
 import { writeFileSync } from "node:fs";
 
-const LENGTH = 2.0; // wrist -> elbow
+const LENGTH = 24; // inches, wrist -> elbow
 const SEGMENTS_ALONG = 64;
 const RADIAL_SEGMENTS = 32;
-const R_WRIST = 0.28;
-const R_ELBOW = 0.36;
-const BEND = 0.09; // how much the centerline curves, for a non-trivial demo centerline
+const R_WRIST = 1.0; // inches
+const R_ELBOW = 1.9; // inches
+const BEND = 1.1; // inches of lateral centerline deviation, for a non-trivial demo centerline
 const ELLIPTICITY = 0.12; // radius variation by angle (forearms aren't perfect circles)
 
 const verts = [];
