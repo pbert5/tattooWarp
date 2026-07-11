@@ -74,7 +74,7 @@ npm run dist
 
 # Build installers for a specific platform (cross-building linux/win works
 # from any host; macOS targets must be built on an actual macOS machine/runner)
-npm run dist:linux   # -> release/*.AppImage, *.deb
+npm run dist:linux   # -> release/*.AppImage
 npm run dist:win     # -> release/*.exe (NSIS installer + portable)
 npm run dist:mac     # -> release/*.dmg, *.zip (x64 + arm64)
 ```
