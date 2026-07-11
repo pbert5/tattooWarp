@@ -56,3 +56,9 @@ nsis:
 
 publish:
   provider: github
+  # Set explicitly rather than relying on auto-detection from package.json's
+  # "repository" field or `git remote` — that detection looks for .git next
+  # to the checkout root, and failed in CI (app/ is a subdirectory of the
+  # repo, not the repo root) with "Cannot detect repository by .git/config".
+  owner: pbert5
+  repo: tattoowarp
