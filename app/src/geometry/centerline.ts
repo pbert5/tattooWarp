@@ -79,7 +79,36 @@ export function extractCenterline(mesh: THREE.Mesh, slices = 40): Centerline {
     ]);
   }
 
-  return buildFromPoints(points);
+  return buildFromPoints(smoothCentroids(points));
+}
+
+/**
+ * Per-slice centroids are noisy: a cutting plane perpendicular to the single
+ * straight PCA axis meets a curved/bent limb surface at a shifted angle away
+ * from that axis, so consecutive centroids zigzag even though the true
+ * medial axis is smooth. A spline *through* the raw centroids doesn't help —
+ * it still passes through every noisy point. Laplacian-smooth the centroids
+ * first (averaging each toward its neighbors, endpoints anchored) to
+ * actually reduce that noise, then resample with a Catmull-Rom spline for an
+ * evenly-spaced smooth curve — this is the "smooth curve through the
+ * centroids" the design calls for.
+ */
+function smoothCentroids(points: THREE.Vector3[]): THREE.Vector3[] {
+  if (points.length < 4) return points;
+  let pts = points.map((p) => p.clone());
+  const iterations = 8;
+  const blend = 0.5;
+  for (let iter = 0; iter < iterations; iter++) {
+    pts = pts.map((p, i) => {
+      if (i === 0 || i === pts.length - 1) return p;
+      const neighborAvg = new THREE.Vector3()
+        .addVectors(pts[i - 1], pts[i + 1])
+        .multiplyScalar(0.5);
+      return p.clone().lerp(neighborAvg, blend);
+    });
+  }
+  const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
+  return curve.getPoints(pts.length * 3);
 }
 
 function buildFromPoints(points: THREE.Vector3[]): Centerline {

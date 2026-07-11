@@ -31,7 +31,17 @@ export function PreviewPane() {
     }
     const img = new Image();
     img.onload = () => {
-      const result = warpImageForSurface(grid, img, 3);
+      // pixelsPerUnit assumes the mesh's world units directly, so a fixed
+      // constant produces a near-blank few-pixel-wide canvas for meshes
+      // authored in meters (or an enormous one for millimeters). Scale it
+      // from the surface's actual circumference so the preview always comes
+      // out at a legible resolution regardless of source unit convention.
+      const targetPreviewWidthPx = 256;
+      const pixelsPerUnit =
+        grid.maxCircumference > 0
+          ? Math.min(4000, Math.max(4, targetPreviewWidthPx / grid.maxCircumference))
+          : 4;
+      const result = warpImageForSurface(grid, img, pixelsPerUnit);
       const ctx = canvasRef.current!.getContext("2d")!;
       canvasRef.current!.width = result.canvas.width;
       canvasRef.current!.height = result.canvas.height;

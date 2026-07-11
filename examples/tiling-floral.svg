@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <g fill="none" stroke="#111" stroke-width="3.5" stroke-linecap="round">
+    <circle cx="60" cy="60" r="8" fill="#111" stroke="none" />
+    <path d="M60 60 C60 30, 40 20, 30 10" />
+    <path d="M60 60 C60 30, 80 20, 90 10" />
+    <path d="M60 60 C90 60, 100 40, 110 30" />
+    <path d="M60 60 C90 60, 100 80, 110 90" />
+    <path d="M60 60 C60 90, 80 100, 90 110" />
+    <path d="M60 60 C60 90, 40 100, 30 110" />
+    <path d="M60 60 C30 60, 20 80, 10 90" />
+    <path d="M60 60 C30 60, 20 40, 10 30" />
+    <circle cx="30" cy="10" r="3" fill="#111" stroke="none" />
+    <circle cx="90" cy="10" r="3" fill="#111" stroke="none" />
+    <circle cx="110" cy="30" r="3" fill="#111" stroke="none" />
+    <circle cx="110" cy="90" r="3" fill="#111" stroke="none" />
+    <circle cx="90" cy="110" r="3" fill="#111" stroke="none" />
+    <circle cx="30" cy="110" r="3" fill="#111" stroke="none" />
+    <circle cx="10" cy="90" r="3" fill="#111" stroke="none" />
+    <circle cx="10" cy="30" r="3" fill="#111" stroke="none" />
+  </g>
+</svg>
