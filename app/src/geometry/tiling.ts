@@ -9,7 +9,7 @@ export interface ArcObstacle {
 export interface TilePlacement {
   /** arc-length position (0..circumference) of the tile's leading edge. */
   position: number;
-  /** which staggered row (0 = base, 1 = offset row half a unit up); always 0 if not staggered. */
+  /** which staggered row: 0 = on the ring, each further row sits half a tile higher. */
   row: number;
 }
 
@@ -72,6 +72,36 @@ function placeInSegment(segment: ArcObstacle, pitch: number): number[] {
   return positions;
 }
 
+export interface TileMetrics {
+  /** tiles around the full ring */
+  count: number;
+  /** arc length from one tile's leading edge to the next */
+  pitch: number;
+  /** the tile's drawn width, in model units */
+  width: number;
+  /** gap between tiles as a fraction of tile size; 0 = touching */
+  spacing: number;
+}
+
+/**
+ * A tile's size comes from the ring itself: the user says how many they want
+ * around it, and the perimeter divides down to a width. Deriving it this way
+ * (rather than typing an absolute size) is what makes the repeat close cleanly
+ * on any limb, and it keeps the layout and the renderer from drifting apart —
+ * both size off this one function.
+ */
+export function tileMetrics(circumference: number, options: TilingOptions): TileMetrics {
+  // Older projects stored an absolute unit size; recover the equivalent count.
+  const stored =
+    options.tileCount ?? (options.unitSize ? circumference / options.unitSize : 8);
+  const count = Math.max(1, Math.round(stored));
+  const pitch = circumference / count;
+  // horizontalDelta is the gap as a fraction of tile width: 0 = touching.
+  const spacing = Math.max(0, options.horizontalDelta ?? 0);
+  const width = pitch / (1 + spacing);
+  return { count, pitch, width, spacing };
+}
+
 export interface LayoutParams {
   circumference: number;
   options: TilingOptions;
@@ -87,39 +117,49 @@ export interface LayoutParams {
  */
 export function layoutTiling(params: LayoutParams): TilePlacement[] {
   const { circumference, options, obstacles } = params;
-  const pitch = options.unitSize * (1 + options.horizontalDelta);
-  if (pitch <= 0 || circumference <= 0) return [];
+  if (circumference <= 0) return [];
+  const { count, pitch, width } = tileMetrics(circumference, options);
+  if (pitch <= 0) return [];
 
   // Spins the whole repeat around the ring, measured in element radii: 1 slides
   // the pattern by half a tile, 2 by a full tile (back onto itself at delta 0).
   // Obstacles stay put, so this is also how you slide tiles out from under a
   // static element in `avoid` mode. Degrees would be the wrong unit here — a
   // degree is ~2% of a tile on a typical limb, so the arrows read as dead.
-  const rotationArc = (options.rotationOffset ?? 0) * (options.unitSize / 2);
+  const rotationArc = (options.rotationOffset ?? 0) * (width / 2);
 
   const effectiveObstacles: ArcObstacle[] = options.nonTileMode === "avoid" ? obstacles : [];
   const segments =
-    effectiveObstacles.length > 0
-      ? freeSegments(circumference, effectiveObstacles)
-      : [{ start: 0, end: circumference }];
+    effectiveObstacles.length > 0 ? freeSegments(circumference, effectiveObstacles) : null;
+
+  // `staggered` was a bool meaning "one extra interleaved row"; older saved
+  // projects still carry it, and it maps exactly onto 2 layers.
+  const layers = Math.max(1, Math.round(options.staggerLayers ?? (options.staggered ? 2 : 1)));
 
   const placements: TilePlacement[] = [];
-  for (const seg of segments) {
-    for (const pos of placeInSegment(seg, pitch)) {
-      placements.push({ position: normalize(pos + rotationArc, circumference), row: 0 });
-    }
-  }
+  for (let row = 0; row < layers; row++) {
+    // Odd rows start half a pitch along, so consecutive rows interlock rather
+    // than stacking in columns.
+    const rowShift = (row % 2) * (pitch / 2);
 
-  if (options.staggered) {
-    const rowOffsetSegments =
-      effectiveObstacles.length > 0
-        ? freeSegments(circumference, effectiveObstacles)
-        : [{ start: 0, end: circumference }];
-    for (const seg of rowOffsetSegments) {
-      const offsetSeg = { start: seg.start + pitch / 2, end: seg.end };
-      if (offsetSeg.end - offsetSeg.start <= 0) continue;
-      for (const pos of placeInSegment(offsetSeg, pitch)) {
-        placements.push({ position: normalize(pos + rotationArc, circumference), row: 1 });
+    if (!segments) {
+      // Unobstructed ring: place exactly `count` tiles. Walking the arc with
+      // `placeInSegment` would emit one at 0 and another at the circumference,
+      // which is the same spot — a doubled tile at the seam.
+      for (let i = 0; i < count; i++) {
+        placements.push({
+          position: normalize(rowShift + i * pitch + rotationArc, circumference),
+          row,
+        });
+      }
+      continue;
+    }
+
+    for (const seg of segments) {
+      const rowSeg = { start: seg.start + rowShift, end: seg.end };
+      if (rowSeg.end - rowSeg.start <= 0) continue;
+      for (const pos of placeInSegment(rowSeg, pitch)) {
+        placements.push({ position: normalize(pos + rotationArc, circumference), row });
       }
     }
   }

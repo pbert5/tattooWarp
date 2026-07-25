@@ -22,8 +22,8 @@ const DEFAULT_PREVIEW_COLOR = "#e11d2a";
 
 function defaultTilingOptions(): TilingOptions {
   return {
-    staggered: false,
-    unitSize: 1,
+    staggerLayers: 1,
+    tileCount: 8,
     horizontalDelta: 0,
     rotationOffset: 0,
     nonTileMode: "avoid",

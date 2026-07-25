@@ -118,57 +118,49 @@ export function GraphicNodeEditor({ graphic }: Props) {
         </div>
       )}
 
-      <label className="row" title="Position relative to the ring this element is anchored to">
-        Placement
-        <select
-          value={offset === 0 ? "inline" : "offset"}
-          onChange={(e) =>
-            updateGraphic(graphic.id, { offsetUnits: e.target.value === "inline" ? 0 : 1 })
-          }
-        >
-          <option value="inline">Inline with ring</option>
-          <option value="offset">Vertical offset</option>
-        </select>
+      <label
+        className="row"
+        title="Distance above (+) or below (-) the ring, in model units. 0 sits inline with the ring."
+      >
+        Vertical offset
+        <input
+          type="number"
+          step={0.25}
+          value={offset}
+          onChange={(e) => updateGraphic(graphic.id, { offsetUnits: Number(e.target.value) })}
+        />
       </label>
 
-      {offset !== 0 && (
-        <label className="row" title="Distance above (+) or below (-) the ring, in model units">
-          Offset
+      {/* A tiled element's size comes from the ring (perimeter / tile count),
+          so this only applies to standalone ones. */}
+      {!graphic.tiling && (
+        <label
+          className="row"
+          title={
+            rings.length > 1
+              ? "Height in D units: 1 = one ring-to-ring spacing"
+              : "Height in model units (inches on the sample limb)"
+          }
+        >
+          Size
+          <input
+            type="range"
+            min={0.05}
+            max={rings.length > 1 ? 4 : 8}
+            step={0.05}
+            value={graphic.heightUnitsD}
+            onChange={(e) => updateGraphic(graphic.id, { heightUnitsD: Number(e.target.value) })}
+          />
           <input
             type="number"
+            className="size-value"
+            min={0.05}
             step={0.25}
-            value={offset}
-            onChange={(e) => updateGraphic(graphic.id, { offsetUnits: Number(e.target.value) })}
+            value={graphic.heightUnitsD}
+            onChange={(e) => updateGraphic(graphic.id, { heightUnitsD: Number(e.target.value) })}
           />
         </label>
       )}
-
-      <label
-        className="row"
-        title={
-          rings.length > 1
-            ? "Height in D units: 1 = one ring-to-ring spacing"
-            : "Height in model units (inches on the sample limb)"
-        }
-      >
-        Size
-        <input
-          type="range"
-          min={0.05}
-          max={rings.length > 1 ? 4 : 8}
-          step={0.05}
-          value={graphic.heightUnitsD}
-          onChange={(e) => updateGraphic(graphic.id, { heightUnitsD: Number(e.target.value) })}
-        />
-        <input
-          type="number"
-          className="size-value"
-          min={0.05}
-          step={0.25}
-          value={graphic.heightUnitsD}
-          onChange={(e) => updateGraphic(graphic.id, { heightUnitsD: Number(e.target.value) })}
-        />
-      </label>
 
       <label className="row">
         Layer
@@ -226,38 +218,67 @@ function TilingOptionsEditor({ graphic }: Props) {
 
   const set = (patch: Partial<typeof opts>) =>
     updateGraphic(graphic.id, { tilingOptions: { ...opts, ...patch } });
+  // Older projects carry an absolute unitSize instead; 8 matches tileMetrics' default.
+  const tileCount = Math.max(1, Math.round(opts.tileCount ?? 8));
 
   return (
     <div className="tiling-options">
-      <label className="row">
+      <label
+        className="row"
+        title="Rows of tiles stacked up from the ring, each half a tile higher and interlocked with the last. 1 = a single row."
+      >
+        Stagger layers
         <input
-          type="checkbox"
-          checked={opts.staggered}
-          onChange={(e) => set({ staggered: e.target.checked })}
+          type="number"
+          min={1}
+          step={1}
+          value={opts.staggerLayers ?? (opts.staggered ? 2 : 1)}
+          onChange={(e) => set({ staggerLayers: Math.max(1, Math.round(Number(e.target.value))) })}
         />
-        Staggered
       </label>
-      <label className="row">
-        Unit size
+      <label
+        className="row"
+        title="How many tiles go around the ring. Tile width is the ring's perimeter divided by this, so the repeat always closes on itself."
+      >
+        Tiles around
         <input
           type="range"
-          min={0.05}
-          max={2}
-          step={0.05}
-          value={opts.unitSize}
-          onChange={(e) => set({ unitSize: Number(e.target.value) })}
+          min={1}
+          max={60}
+          step={1}
+          value={tileCount}
+          onChange={(e) => set({ tileCount: Number(e.target.value) })}
+        />
+        <input
+          type="number"
+          className="size-value"
+          min={1}
+          step={1}
+          value={tileCount}
+          onChange={(e) => set({ tileCount: Math.max(1, Math.round(Number(e.target.value))) })}
         />
       </label>
-      <label className="row">
-        Horizontal delta
-        <select
-          value={opts.horizontalDelta}
+      <label
+        className="row"
+        title="Gap between tiles, as a fraction of tile width: 0 = touching, 0.5 = a half-width gap, 1 = a full-width gap. Tile count stays fixed, so spacing trades mark size for gap."
+      >
+        Spacing
+        <input
+          type="range"
+          min={0}
+          max={2}
+          step={0.05}
+          value={opts.horizontalDelta ?? 0}
           onChange={(e) => set({ horizontalDelta: Number(e.target.value) })}
-        >
-          <option value={0}>Touching (0)</option>
-          <option value={0.5}>Half-width gap</option>
-          <option value={1}>Full-width gap</option>
-        </select>
+        />
+        <input
+          type="number"
+          className="size-value"
+          min={0}
+          step={0.05}
+          value={opts.horizontalDelta ?? 0}
+          onChange={(e) => set({ horizontalDelta: Math.max(0, Number(e.target.value)) })}
+        />
       </label>
       <label className="row" title="Spins the repeat around the ring, in element radii: 1 = half a tile">
         Rotational offset (r)

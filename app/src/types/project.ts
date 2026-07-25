@@ -8,9 +8,18 @@ export interface RingDef {
 }
 
 export interface TilingOptions {
-  staggered: boolean;
-  /** unit size (height in same units as the model) */
-  unitSize: number;
+  /** rows of tiles stacked up from the ring; alternate rows interleave by half a tile. 1 = a single row */
+  staggerLayers: number;
+  /** @deprecated superseded by staggerLayers; only read when loading older project files */
+  staggered?: boolean;
+  /**
+   * How many tiles go around the ring. This is what sets a tile's physical
+   * size: width = circumference / tileCount, so the repeat always closes on
+   * itself rather than leaving a seam wherever the ring's measurement lands.
+   */
+  tileCount: number;
+  /** @deprecated superseded by tileCount; only read when loading older project files */
+  unitSize?: number;
   /** horizontal spacing baseline, in units of the tile width: 0 = touching, 0.5 = half-width gap, 1 = full-width gap */
   horizontalDelta: number;
   /** spin of the whole repeat around the ring, in element radii (unitSize / 2) */

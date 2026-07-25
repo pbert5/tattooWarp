@@ -93,10 +93,10 @@ await tilingCheckbox.check();
 await page.waitForTimeout(600);
 await page.screenshot({ path: `${OUT}/06-tiling-enabled.png` });
 
-const staggeredCheckbox = diamondItem.locator(".tiling-options input[type=checkbox]");
-if (await staggeredCheckbox.count()) await staggeredCheckbox.check();
-const unitSizeSlider = diamondItem.locator(".tiling-options input[type=range]").first();
-if (await unitSizeSlider.count()) await unitSizeSlider.fill("1.4");
+const staggerLayers = diamondItem.locator(".tiling-options input[type=number]").first();
+if (await staggerLayers.count()) await staggerLayers.fill("2");
+const tileCountSlider = diamondItem.locator(".tiling-options input[type=range]").first();
+if (await tileCountSlider.count()) await tileCountSlider.fill("7");
 await page.waitForTimeout(600);
 await page.screenshot({ path: `${OUT}/07-tiling-staggered.png` });
 

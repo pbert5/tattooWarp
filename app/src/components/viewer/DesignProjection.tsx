@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useProjectStore } from "../../state/store";
 import { crossSectionAt, type Centerline } from "../../geometry/centerline";
 import { sectionCircumference } from "../../geometry/crossSection";
-import { layoutTiling, type ArcObstacle } from "../../geometry/tiling";
+import { layoutTiling, tileMetrics, type ArcObstacle } from "../../geometry/tiling";
 import {
   buildUnwrapGrid,
   surfaceNormalUniform,
@@ -114,6 +114,32 @@ function buildObstacles(ring: RingDef, graphics: GraphicNode[], circumference: n
     });
 }
 
+/**
+ * Bounding box of everything that isn't fully transparent. An SVG or PNG is
+ * usually authored on a canvas larger than the mark itself, and that padding is
+ * background, not design — sizing a tile by the full canvas would leave the
+ * visible motif smaller than the width the user asked for, with the error
+ * growing as the margin does.
+ */
+function contentBounds(data: Uint8ClampedArray, w: number, h: number) {
+  let minX = w;
+  let minY = h;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] === 0) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  // Fully transparent: nothing to trim to, keep the whole canvas.
+  if (maxX < minX || maxY < minY) return { x: 0, y: 0, w, h };
+  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+}
+
 /** Loads `url`, recolors every non-transparent pixel to `color` (keeping alpha), returns a texture + its aspect ratio. */
 function useRecoloredTexture(url: string | undefined, color: string) {
   const [state, setState] = useState<{ texture: THREE.CanvasTexture | null; aspect: number }>({
@@ -146,10 +172,19 @@ function useRecoloredTexture(url: string | undefined, color: string) {
         }
       }
       ctx.putImageData(imageData, 0, 0);
-      const texture = new THREE.CanvasTexture(canvas);
+
+      // Crop to the artwork itself, so the patch bounds the mark rather than
+      // the file's canvas and the drawn size matches the requested size.
+      const box = contentBounds(data, canvas.width, canvas.height);
+      const trimmed = document.createElement("canvas");
+      trimmed.width = box.w;
+      trimmed.height = box.h;
+      trimmed.getContext("2d")!.drawImage(canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+
+      const texture = new THREE.CanvasTexture(trimmed);
       texture.needsUpdate = true;
       texture.colorSpace = THREE.SRGBColorSpace;
-      setState({ texture, aspect: canvas.width / canvas.height });
+      setState({ texture, aspect: box.w / box.h });
     };
     img.src = url;
     return () => {
@@ -210,21 +245,25 @@ function GraphicProjection({
         if (patch) list.push({ ...patch, key: `${graphic.id}-${ring.id}` });
       }
     } else if (graphic.tilingOptions) {
-      // unitSize is the tile's height; width follows the artwork's own aspect ratio.
-      const unitHeight = graphic.tilingOptions.unitSize;
-      const vExtent = THREE.MathUtils.clamp(unitHeight / grid.centerlineLength, 0.003, 1);
       for (const ring of assignedRings) {
         const section = crossSectionAt(mesh, centerline, ring.t, 128);
         const circumference = sectionCircumference(section);
         if (circumference <= 0) continue;
         const obstacles = buildObstacles(ring, graphics, circumference);
         const placements = layoutTiling({ circumference, options: graphic.tilingOptions, obstacles });
-        const unitWidth = unitHeight * aspect;
-        const angleExtent = THREE.MathUtils.clamp(unitWidth / circumference, 0.003, 1);
+        // Width is set by the ring (perimeter / tile count); height follows from
+        // the artwork's own proportions, measured on its trimmed content.
+        const { width, spacing } = tileMetrics(circumference, graphic.tilingOptions);
+        const vExtent = THREE.MathUtils.clamp(width / aspect / grid.centerlineLength, 0.003, 1);
+        const angleExtent = THREE.MathUtils.clamp(width / circumference, 0.003, 1);
+        // Rows interlock by half a tile, then separate by the same gap fraction
+        // the spacing control applies horizontally, so a spaced-out pattern
+        // opens up in both directions instead of only around the ring.
+        const rowStep = vExtent * (0.5 + spacing);
         for (const placement of placements) {
           const angleCenter = placement.position / circumference;
           const vCenter = THREE.MathUtils.clamp(
-            ring.t + offsetFrac + (placement.row === 1 ? vExtent * 0.5 : 0),
+            ring.t + offsetFrac + placement.row * rowStep,
             0,
             1,
           );
