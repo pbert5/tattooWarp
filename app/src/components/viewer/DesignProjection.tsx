@@ -184,7 +184,13 @@ function GraphicProjection({
   const patches = useMemo(() => {
     if (!texture) return [];
     const list: Patch[] = [];
-    const ringSpacingFrac = rings.length > 1 ? 1 / (rings.length - 1) : 0.2;
+    // "D" is one ring-to-ring spacing. With a single ring there is no spacing
+    // to measure against, so size falls back to model units (1 = one inch on
+    // the sample limb) — the same units tiling's unitSize and the offset use.
+    // The old 0.2 fallback meant a fifth of the whole limb, so anything placed
+    // on a single-ring design came out as a huge wrap-around band.
+    const ringSpacingFrac =
+      rings.length > 1 ? 1 / (rings.length - 1) : 1 / grid.centerlineLength;
     const assignedRings = rings.filter((r) => graphic.ringIds.includes(r.id));
     // The ring is the anchor: everything else sits inline with it (0) or at a
     // vertical offset from it, given in model units and converted to the

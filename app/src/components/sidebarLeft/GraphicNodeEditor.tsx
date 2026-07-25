@@ -61,8 +61,11 @@ export function GraphicNodeEditor({ graphic }: Props) {
 
       {!graphic.tiling ? (
         <>
-          <label className="row">
-            Height
+          <label
+            className="row"
+            title="Arc this element claims around the ring, so tiling fills around it. Its drawn size is the Size slider below."
+          >
+            Collision width
             <input
               type="range"
               min={0.05}
@@ -140,12 +143,28 @@ export function GraphicNodeEditor({ graphic }: Props) {
         </label>
       )}
 
-      <label className="row">
-        Height (D units)
+      <label
+        className="row"
+        title={
+          rings.length > 1
+            ? "Height in D units: 1 = one ring-to-ring spacing"
+            : "Height in model units (inches on the sample limb)"
+        }
+      >
+        Size
+        <input
+          type="range"
+          min={0.05}
+          max={rings.length > 1 ? 4 : 8}
+          step={0.05}
+          value={graphic.heightUnitsD}
+          onChange={(e) => updateGraphic(graphic.id, { heightUnitsD: Number(e.target.value) })}
+        />
         <input
           type="number"
-          min={0.5}
-          step={0.5}
+          className="size-value"
+          min={0.05}
+          step={0.25}
           value={graphic.heightUnitsD}
           onChange={(e) => updateGraphic(graphic.id, { heightUnitsD: Number(e.target.value) })}
         />
@@ -240,10 +259,11 @@ function TilingOptionsEditor({ graphic }: Props) {
           <option value={1}>Full-width gap</option>
         </select>
       </label>
-      <label className="row">
-        Rotational offset
+      <label className="row" title="Spins the repeat around the ring, in element radii: 1 = half a tile">
+        Rotational offset (r)
         <input
           type="number"
+          step={0.1}
           value={opts.rotationOffset}
           onChange={(e) => set({ rotationOffset: Number(e.target.value) })}
         />

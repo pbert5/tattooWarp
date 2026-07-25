@@ -369,6 +369,11 @@
   flex: 1;
 }
 
+.row input.size-value {
+  width: 52px;
+  flex: 0 0 auto;
+}
+
 .row input[type="number"] {
   width: 60px;
   background: #0d0e12;

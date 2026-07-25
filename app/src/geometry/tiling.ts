@@ -90,6 +90,13 @@ export function layoutTiling(params: LayoutParams): TilePlacement[] {
   const pitch = options.unitSize * (1 + options.horizontalDelta);
   if (pitch <= 0 || circumference <= 0) return [];
 
+  // Spins the whole repeat around the ring, measured in element radii: 1 slides
+  // the pattern by half a tile, 2 by a full tile (back onto itself at delta 0).
+  // Obstacles stay put, so this is also how you slide tiles out from under a
+  // static element in `avoid` mode. Degrees would be the wrong unit here — a
+  // degree is ~2% of a tile on a typical limb, so the arrows read as dead.
+  const rotationArc = (options.rotationOffset ?? 0) * (options.unitSize / 2);
+
   const effectiveObstacles: ArcObstacle[] = options.nonTileMode === "avoid" ? obstacles : [];
   const segments =
     effectiveObstacles.length > 0
@@ -99,7 +106,7 @@ export function layoutTiling(params: LayoutParams): TilePlacement[] {
   const placements: TilePlacement[] = [];
   for (const seg of segments) {
     for (const pos of placeInSegment(seg, pitch)) {
-      placements.push({ position: normalize(pos, circumference), row: 0 });
+      placements.push({ position: normalize(pos + rotationArc, circumference), row: 0 });
     }
   }
 
@@ -112,7 +119,7 @@ export function layoutTiling(params: LayoutParams): TilePlacement[] {
       const offsetSeg = { start: seg.start + pitch / 2, end: seg.end };
       if (offsetSeg.end - offsetSeg.start <= 0) continue;
       for (const pos of placeInSegment(offsetSeg, pitch)) {
-        placements.push({ position: normalize(pos, circumference), row: 1 });
+        placements.push({ position: normalize(pos + rotationArc, circumference), row: 1 });
       }
     }
   }

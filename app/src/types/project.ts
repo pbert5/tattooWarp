@@ -13,7 +13,8 @@ export interface TilingOptions {
   unitSize: number;
   /** horizontal spacing baseline, in units of the tile width: 0 = touching, 0.5 = half-width gap, 1 = full-width gap */
   horizontalDelta: number;
-  rotationOffset: number; // degrees
+  /** spin of the whole repeat around the ring, in element radii (unitSize / 2) */
+  rotationOffset: number;
   nonTileMode: NonTileMode;
 }
 

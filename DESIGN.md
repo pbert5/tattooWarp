@@ -150,6 +150,10 @@ Per-graphic option tree:
   neighbors); 3 = full band width for a "core" wraparound element; users may
   enter any value. This gives artists a unit-free relative sizing.
   Staggered layouts allow taller elements than square layouts (see §4).
+  With a **single ring** there is no ring-to-ring spacing to measure against,
+  so the size is read as model units instead (1 = one inch on the sample
+  limb), matching the offset and tiling unit size. Exposed as a slider plus a
+  numeric field.
 - **Layer/priority**: higher entries win collisions; used to carve out
   static ("seed") placements before the filler pattern is solved, and to
   crop lower layers where a higher layer supersedes them.
