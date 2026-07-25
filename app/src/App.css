@@ -250,6 +250,62 @@
   border-radius: 6px;
 }
 
+/* Working files tray */
+.working-files {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 12px;
+  background: #191a21;
+}
+
+.working-files.dragging {
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
+.working-files-header {
+  margin-bottom: 6px;
+}
+
+.working-files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+
+.working-file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0d0e12;
+  color: inherit;
+  cursor: pointer;
+}
+
+.working-file:hover {
+  border-color: var(--accent);
+}
+
+.working-file img {
+  width: 100%;
+  height: 44px;
+  object-fit: contain;
+}
+
+.working-file span {
+  font-size: 10px;
+  color: #9ca3af;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Graphics tree */
 .graphics-tree {
   display: flex;

@@ -186,6 +186,10 @@ function GraphicProjection({
     const list: Patch[] = [];
     const ringSpacingFrac = rings.length > 1 ? 1 / (rings.length - 1) : 0.2;
     const assignedRings = rings.filter((r) => graphic.ringIds.includes(r.id));
+    // The ring is the anchor: everything else sits inline with it (0) or at a
+    // vertical offset from it, given in model units and converted to the
+    // grid's normalized height the same way tile heights are.
+    const offsetFrac = (graphic.offsetUnits ?? 0) / grid.centerlineLength;
 
     if (!graphic.tiling) {
       // Per the design: a non-tiling graphic's width always auto-fits the
@@ -195,7 +199,8 @@ function GraphicProjection({
       const vExtent = Math.max(graphic.heightUnitsD, 0.05) * ringSpacingFrac;
       const angleCenter = wrap01((graphic.angleDeg ?? 0) / 360 + 0.5);
       for (const ring of assignedRings) {
-        const patch = buildPatch(grid, angleCenter, ring.t, 1, vExtent);
+        const vCenter = THREE.MathUtils.clamp(ring.t + offsetFrac, 0, 1);
+        const patch = buildPatch(grid, angleCenter, vCenter, 1, vExtent);
         if (patch) list.push({ ...patch, key: `${graphic.id}-${ring.id}` });
       }
     } else if (graphic.tilingOptions) {
@@ -213,7 +218,7 @@ function GraphicProjection({
         for (const placement of placements) {
           const angleCenter = placement.position / circumference;
           const vCenter = THREE.MathUtils.clamp(
-            ring.t + (placement.row === 1 ? vExtent * 0.5 : 0),
+            ring.t + offsetFrac + (placement.row === 1 ? vExtent * 0.5 : 0),
             0,
             1,
           );

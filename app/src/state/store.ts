@@ -56,6 +56,8 @@ interface TattooWarpState {
 
   importModel: (file: File) => Promise<void>;
   addImageAsset: (file: File) => Promise<string>;
+  /** Promotes a working file (image asset) into an active element on the design. */
+  addGraphicFromAsset: (assetId: string) => void;
   importGraphic: (file: File) => Promise<void>;
   loadProject: (project: ProjectState, assets: Record<string, AssetRecord>) => Promise<void>;
 
@@ -200,17 +202,19 @@ export const useProjectStore = create<TattooWarpState>((set, get) => ({
     return assetId;
   },
 
-  async importGraphic(file: File) {
-    const assetId = await get().addImageAsset(file);
+  addGraphicFromAsset(assetId: string) {
+    const asset = get().assets[assetId];
+    if (!asset) return;
     const graphic: GraphicNode = {
       id: uid("graphic"),
-      name: file.name,
+      name: asset.name,
       assetId,
       tiling: false,
       height: 1,
       tilt: 0,
       angleDeg: 0,
       ringIds: get().project.rings.map((r) => r.id),
+      offsetUnits: 0,
       heightUnitsD: 1,
       layer: get().project.graphics.length,
       variants: [],
@@ -220,6 +224,10 @@ export const useProjectStore = create<TattooWarpState>((set, get) => ({
       project: { ...s.project, graphics: [...s.project.graphics, graphic] },
       selectedGraphicId: graphic.id,
     }));
+  },
+
+  async importGraphic(file: File) {
+    get().addGraphicFromAsset(await get().addImageAsset(file));
   },
 
   enterCropMode: () => set({ cropMode: true }),

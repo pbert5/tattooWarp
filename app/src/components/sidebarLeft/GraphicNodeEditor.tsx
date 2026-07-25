@@ -13,6 +13,7 @@ export function GraphicNodeEditor({ graphic }: Props) {
   const addGraphicVariant = useProjectStore((s) => s.addGraphicVariant);
   const addImageAsset = useProjectStore((s) => s.addImageAsset);
   const variantFileRef = useRef<HTMLInputElement>(null);
+  const offset = graphic.offsetUnits ?? 0;
 
   const toggleRing = (ringId: string) => {
     const has = graphic.ringIds.includes(ringId);
@@ -96,21 +97,48 @@ export function GraphicNodeEditor({ graphic }: Props) {
         <TilingOptionsEditor graphic={graphic} />
       )}
 
-      <div className="row">
-        Rings:
-        <div className="ring-select">
-          {rings.map((r) => (
-            <label key={r.id} className="chip">
-              <input
-                type="checkbox"
-                checked={graphic.ringIds.includes(r.id)}
-                onChange={() => toggleRing(r.id)}
-              />
-              {r.label}
-            </label>
-          ))}
+      {rings.length > 1 && (
+        <div className="row">
+          Rings:
+          <div className="ring-select">
+            {rings.map((r) => (
+              <label key={r.id} className="chip">
+                <input
+                  type="checkbox"
+                  checked={graphic.ringIds.includes(r.id)}
+                  onChange={() => toggleRing(r.id)}
+                />
+                {r.label}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      <label className="row" title="Position relative to the ring this element is anchored to">
+        Placement
+        <select
+          value={offset === 0 ? "inline" : "offset"}
+          onChange={(e) =>
+            updateGraphic(graphic.id, { offsetUnits: e.target.value === "inline" ? 0 : 1 })
+          }
+        >
+          <option value="inline">Inline with ring</option>
+          <option value="offset">Vertical offset</option>
+        </select>
+      </label>
+
+      {offset !== 0 && (
+        <label className="row" title="Distance above (+) or below (-) the ring, in model units">
+          Offset
+          <input
+            type="number"
+            step={0.25}
+            value={offset}
+            onChange={(e) => updateGraphic(graphic.id, { offsetUnits: Number(e.target.value) })}
+          />
+        </label>
+      )}
 
       <label className="row">
         Height (D units)

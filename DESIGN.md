@@ -98,24 +98,39 @@ Two independent side-panel documents plus one shared 3D main viewer.
 - A slider per active ring, 0–100 along centerline arc length.
 - Each slider drives a marker dot on the centerline and a live cross-section
   circle projected onto the surface at that height.
-- **Number of rings** is a top-level setting (in the left sidebar's option
-  tree — see below) that spawns N equally-spaced ring definitions (Ring A,
-  Ring B, Ring C, …); the right sidebar shows one slider per ring so the user
-  can fine-tune each ring's exact position after the equal-spacing default.
+- **One ring by default.** The ring is the anchor for the whole design:
+  elements are placed against it, either inline with it or at a vertical
+  offset (see §3.3). A single reference line is what an artist actually marks
+  on a limb, so multiple rings are the exception rather than the starting
+  point.
+- **Number of rings** remains a top-level setting (in the left sidebar's
+  option tree — see below) that spawns N equally-spaced ring definitions (Ring
+  A, Ring B, Ring C, …); the right sidebar shows one slider per ring so the
+  user can fine-tune each ring's exact position after the equal-spacing
+  default. Per-graphic ring assignment only appears once more than one ring
+  exists.
 
 ### 3.3 Left sidebar — graphics & tiling
 
 Hamburger icon → menu of graphics-panel-level actions (import, etc).
 
-**Preview pane** (top of sidebar): two stacked layers per selected graphic —
+**Working files** (top of sidebar): a staging tray of imported artwork. Files
+land here first — via the `+` button (multi-select) or by dropping them on the
+tray — and stay here; clicking one adds it to the design below as an active
+element. Separating import from placement lets one file be placed several
+times (different offsets, tiling settings) and keeps a batch import from
+flooding the design with elements the user then has to delete.
+
+**Preview pane**: two stacked layers per selected graphic —
 top layer shows the design **unmorphed** (flat, as authored), bottom layer
 shows it **morphed** (pre-warped for the current mapping). A third view
 ("rolled out"/"platinum" preview) shows the tiling unit laid out flat before
 placement.
 
-**Graphics tree** (below preview): one node per imported graphic (PNG/SVG or
-other raster/vector asset), each expandable, draggable to reorder (z/priority
-order — see collision rules below), with a small live thumbnail.
+**Active elements** (below preview): one node per graphic placed on the
+design, each expandable, draggable to reorder (z/priority order — see
+collision rules below), with a small live thumbnail. Several nodes may share
+one working file.
 
 Per-graphic option tree:
 
@@ -123,8 +138,12 @@ Per-graphic option tree:
   - If **not tiling**: height slider (width auto-fits the limb's measured
     circumference at its assigned ring/height) and a tilt slider.
   - If **tiling**: see §4.
+- **Placement**: *inline with ring* or *vertical offset*. Inline centres the
+  element on its ring; offset shifts it a signed distance above (+) or below
+  (−) the ring, in model units. This is how a design is built up from a single
+  ring anchor.
 - **Ring assignment**: multi-select of which ring(s) A/B/C… this graphic
-  appears on.
+  appears on. Only shown when more than one ring exists.
 - **Height (in "D" units)**: how tall the element is relative to one
   ring-to-ring spacing unit ("1D"). 1 = fits exactly between two adjacent
   rings; 2 = spans one ring-spacing above and below (2D, touches both

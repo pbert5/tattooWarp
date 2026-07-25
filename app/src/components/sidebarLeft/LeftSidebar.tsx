@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useProjectStore } from "../../state/store";
 import { GraphicNodeEditor } from "./GraphicNodeEditor";
 import { PreviewPane } from "./PreviewPane";
+import { WorkingFiles } from "./WorkingFiles";
 
 export function LeftSidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,10 +50,15 @@ export function LeftSidebar() {
         }}
       />
 
+      <WorkingFiles />
+
       <PreviewPane />
 
+      <span className="preview-label">Active elements</span>
       <div className="graphics-tree">
-        {graphics.length === 0 && <p className="hint">No graphics imported yet.</p>}
+        {graphics.length === 0 && (
+          <p className="hint">Click a working file above to add it to the design.</p>
+        )}
         {graphics
           .slice()
           .sort((a, b) => b.layer - a.layer)

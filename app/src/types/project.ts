@@ -38,6 +38,12 @@ export interface GraphicNode {
   tilingOptions?: TilingOptions;
   /** which rings this graphic is assigned to */
   ringIds: string[];
+  /**
+   * Vertical offset from its ring, in model units (inches for the sample
+   * limb). 0 places the graphic inline with the ring; the ring is the anchor
+   * and everything else is positioned against it.
+   */
+  offsetUnits: number;
   /** height in "D" units: 1 = one ring-spacing, 2 = spans a ring above+below, etc. */
   heightUnitsD: number;
   /** stacking priority; higher wins collisions */

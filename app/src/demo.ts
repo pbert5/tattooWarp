@@ -25,23 +25,20 @@ export async function loadDemo() {
 
   await store.importModel(await fileFrom(limbUrl, "sample-forearm.obj"));
 
-  // ~3in apart on the 24in sample forearm. Set before importing graphics:
-  // each graphic captures the current ring ids as it's created.
-  store.setNumRings(9);
+  // One ring, at mid-limb: it is the anchor everything else is placed against.
+  // The circle sits inline with it and the diamonds a few inches above, which
+  // is the placement model in miniature. Both tile — a non-tiling graphic
+  // stretches to fit the whole circumference, turning a circle into a wide
+  // ellipse.
+  const ring = useProjectStore.getState().project.rings[0];
+  store.setRingT(ring.id, 0.5);
 
-  // Alternating rings, so the two motifs read as separate bands instead of
-  // stacking on top of each other. Both tile: a non-tiling graphic stretches
-  // to fit the whole circumference, which turns a circle into a wide ellipse.
-  const rings = useProjectStore.getState().project.rings;
-  const ringsAt = (parity: number) =>
-    rings.filter((_, i) => i % 2 === parity).map((r) => r.id);
-
-  for (const [url, name, parity] of [
+  for (const [url, name, offsetUnits] of [
     [circleUrl, "basic-circle.svg", 0],
-    [diamondUrl, "tiling-diamond.svg", 1],
+    [diamondUrl, "tiling-diamond.svg", 3],
   ] as const) {
     await store.importGraphic(await fileFrom(url, name));
     const id = useProjectStore.getState().selectedGraphicId;
-    if (id) store.updateGraphic(id, { tiling: true, ringIds: ringsAt(parity) });
+    if (id) store.updateGraphic(id, { tiling: true, offsetUnits });
   }
 }
