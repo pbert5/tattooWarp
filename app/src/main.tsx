@@ -8,3 +8,9 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Demo mode (`nix run .#demo`): preload the sample limb and motifs. The flag is
+// inlined at build time, so a normal build drops this branch and its assets.
+if (import.meta.env.VITE_TATTOOWARP_DEMO) {
+  import('./demo').then((m) => m.loadDemo()).catch((e) => console.error('demo load failed', e))
+}

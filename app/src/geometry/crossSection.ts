@@ -36,24 +36,38 @@ export function sliceMeshWithPlane(
     b.fromBufferAttribute(pos, ib).applyMatrix4(matrixWorld);
     c.fromBufferAttribute(pos, ic).applyMatrix4(matrixWorld);
 
-    const da = plane.distanceToPoint(a);
-    const db = plane.distanceToPoint(b);
-    const dc = plane.distanceToPoint(c);
+    // Snap near-zero distances to exactly zero and treat that as "on the
+    // plane". Without this, a vertex sitting within epsilon of the plane
+    // satisfies neither strict-sign test, so triangles meeting at it emit no
+    // segment while their neighbours do — punching a gap into the section.
+    // The section then stitches into open arcs, and every consumer silently
+    // closes those with a straight chord across the limb. Meshes get sliced on
+    // exactly such planes routinely: scans are usually built on uniform height
+    // bands, so whole rings of vertices share a height.
+    const snap = (d: number) => (Math.abs(d) < epsilon ? 0 : d);
+    const da = snap(plane.distanceToPoint(a));
+    const db = snap(plane.distanceToPoint(b));
+    const dc = snap(plane.distanceToPoint(c));
 
     const pts: THREE.Vector3[] = [];
     const edge = (p1: THREE.Vector3, d1: number, p2: THREE.Vector3, d2: number) => {
+      // Each vertex is p1 of exactly one call, so an on-plane vertex is added
+      // once — and adjacent triangles add the identical point, which is what
+      // lets the stitcher chain straight through it.
+      if (d1 === 0) pts.push(p1.clone());
       if ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) {
         const s = d1 / (d1 - d2);
         pts.push(new THREE.Vector3().lerpVectors(p1, p2, s));
-      } else if (Math.abs(d1) < epsilon) {
-        pts.push(p1.clone());
       }
     };
     edge(a, da, b, db);
     edge(b, db, c, dc);
     edge(c, dc, a, da);
 
-    if (pts.length >= 2) {
+    // Exactly 2 => a clean crossing. 1 => the plane only touches a vertex.
+    // 3 => a fully coplanar triangle, whose neighbours already contribute the
+    // boundary; taking a chord of it here would cut across the section.
+    if (pts.length === 2 && pts[0].distanceTo(pts[1]) > epsilon) {
       segments.push([pts[0], pts[1]]);
     }
   }
@@ -65,8 +79,8 @@ function stitchSegments(
   segments: [THREE.Vector3, THREE.Vector3][],
   epsilon: number,
 ): Loop[] {
-  const key = (p: THREE.Vector3) =>
-    `${Math.round(p.x / epsilon)}_${Math.round(p.y / epsilon)}_${Math.round(p.z / epsilon)}`;
+  const cell = (v: number) => Math.round(v / epsilon);
+  const key = (p: THREE.Vector3) => `${cell(p.x)}_${cell(p.y)}_${cell(p.z)}`;
 
   // adjacency: endpoint key -> list of {segIdx, endIdx}
   const adjacency = new Map<string, { seg: number; end: 0 | 1 }[]>();
@@ -79,6 +93,28 @@ function stitchSegments(
     }
   });
 
+  /**
+   * The same junction computed from two adjacent triangles differs by float
+   * noise, so the two copies can land either side of a bucket boundary. Bucket
+   * lookup alone therefore misses real junctions at random, and a single miss
+   * ends the walk early — splitting one cross-section into open arcs that
+   * `radiusProfile` then closes with a straight chord across the limb. Gather
+   * the 27 surrounding buckets and match on actual distance instead.
+   */
+  const candidatesNear = (p: THREE.Vector3) => {
+    const found: { seg: number; end: 0 | 1 }[] = [];
+    const [cx, cy, cz] = [cell(p.x), cell(p.y), cell(p.z)];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dz = -1; dz <= 1; dz++) {
+          const list = adjacency.get(`${cx + dx}_${cy + dy}_${cz + dz}`);
+          if (list) found.push(...list);
+        }
+      }
+    }
+    return found;
+  };
+
   const used = new Array(segments.length).fill(false);
   const loops: Loop[] = [];
 
@@ -89,15 +125,15 @@ function stitchSegments(
     let guard = 0;
     while (guard++ < segments.length + 1) {
       const tail = loopPts[loopPts.length - 1];
-      const k = key(tail);
-      const candidates = adjacency.get(k) ?? [];
-      const next = candidates.find((c) => !used[c.seg]);
+      const next = candidatesNear(tail).find(
+        (c) => !used[c.seg] && segments[c.seg][c.end].distanceTo(tail) <= epsilon,
+      );
       if (!next) break;
       used[next.seg] = true;
       const seg = segments[next.seg];
       const other = next.end === 0 ? seg[1] : seg[0];
       loopPts.push(other);
-      if (key(other) === key(loopPts[0])) break;
+      if (other.distanceTo(loopPts[0]) <= epsilon) break;
     }
     if (loopPts.length >= 3) loops.push({ points: loopPts });
   }

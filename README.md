@@ -106,3 +106,22 @@ to find `libgtk`, `libnss`, etc. against. It's a toolchain shell, not a
 hermetic build of the installers themselves: `npm run dist:*` still reaches
 out to GitHub to fetch Electron's official per-platform binaries, the same
 way virtually every Electron project builds.
+
+For remote development, `nix run` (from the repo root) starts the app as a
+plain web UI instead of an Electron window — a Vite dev server bound to all
+interfaces, with hot reload, reachable from a browser on another machine. The
+UI is ordinary React/WebGL with no Electron-only APIs, so nothing is missing.
+Extra arguments go to Vite: `nix run . -- --port 8080`.
+
+`nix run .#demo` starts that same server with a project already set up: the
+sample forearm from [`examples/`](./examples), 9 rings, and the circle and
+diamond motifs tiled onto alternating rings. It's the fastest way to see what
+the app does without importing anything. The demo bootstrap
+([`app/src/demo.ts`](./app/src/demo.ts)) is behind a compile-time flag, so a
+normal build excludes it and its assets.
+
+`node --experimental-strip-types examples/check-cross-sections.mjs` asserts that
+slicing the sample limb yields one closed loop per cross section. Open arcs are
+the failure that matters: nothing downstream detects them, and the radius
+profile silently closes an arc with a straight chord across the limb, which
+corrupts the projected design, the ring circumference and the printed size.

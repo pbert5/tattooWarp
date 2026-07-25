@@ -64,6 +64,22 @@
           name = "tattoowarp-dev";
           targetPkgs = pkgs: buildTools ++ electronRuntimeLibs;
         };
+
+        # Vite dev server inside the FHS env, listening on all interfaces.
+        webui = name: extraEnv: {
+          type = "app";
+          program = toString (
+            pkgs.writeShellScript name ''
+              exec ${fhsEnv}/bin/tattoowarp-dev -c '
+                cd "''${TATTOOWARP_APP_DIR:-app}" || { echo "run this from the repo root" >&2; exit 1; }
+                [ -d node_modules ] || npm install
+                export TATTOOWARP_REMOTE=1
+                ${extraEnv}
+                exec npm run dev -- --host "$@"
+              ' ${name} "$@"
+            ''
+          );
+        };
       in
       {
         # `nix develop` drops you into an FHS-compatible shell (via
@@ -83,6 +99,17 @@
           type = "app";
           program = "${fhsEnv}/bin/tattoowarp-dev";
         };
+
+        # `nix run` serves the renderer as a plain web UI (Vite dev server,
+        # bound to all interfaces) instead of opening an Electron window —
+        # the app's UI is ordinary React/WebGL with no Electron IPC, so a
+        # browser on another machine is a complete workspace. Extra args go
+        # to vite, e.g. `nix run . -- --port 8080`.
+        apps.default = webui "tattoowarp-webui" "";
+
+        # Same server, but the page boots with the sample forearm, 9 rings and
+        # the circle + diamond motifs already loaded (see app/src/demo.ts).
+        apps.demo = webui "tattoowarp-demo" "export VITE_TATTOOWARP_DEMO=1";
       }
     );
 }
