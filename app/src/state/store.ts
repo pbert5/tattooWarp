@@ -17,6 +17,9 @@ function uid(prefix: string) {
 
 const RING_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
+/** Default projection tint: red reads clearly against a grayscale/neutral scan. */
+const DEFAULT_PREVIEW_COLOR = "#e11d2a";
+
 function defaultTilingOptions(): TilingOptions {
   return {
     staggered: false,
@@ -211,6 +214,7 @@ export const useProjectStore = create<TattooWarpState>((set, get) => ({
       heightUnitsD: 1,
       layer: get().project.graphics.length,
       variants: [],
+      previewColor: DEFAULT_PREVIEW_COLOR,
     };
     set((s) => ({
       project: { ...s.project, graphics: [...s.project.graphics, graphic] },

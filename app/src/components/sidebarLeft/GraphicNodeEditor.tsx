@@ -49,6 +49,15 @@ export function GraphicNodeEditor({ graphic }: Props) {
         Tiling
       </label>
 
+      <label className="row" title="Tint used when this design is projected onto the limb in the main viewer">
+        Projection color
+        <input
+          type="color"
+          value={graphic.previewColor ?? "#e11d2a"}
+          onChange={(e) => updateGraphic(graphic.id, { previewColor: e.target.value })}
+        />
+      </label>
+
       {!graphic.tiling ? (
         <>
           <label className="row">

@@ -54,7 +54,6 @@ jobs:
           name: tattoowarp-${{ matrix.os }}
           path: |
             app/release/*.AppImage
-            app/release/*.deb
             app/release/*.exe
             app/release/*.dmg
             app/release/*.zip

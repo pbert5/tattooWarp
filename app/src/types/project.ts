@@ -43,6 +43,8 @@ export interface GraphicNode {
   /** stacking priority; higher wins collisions */
   layer: number;
   variants: GraphicVariant[];
+  /** tint used when this design is projected onto the limb in the main viewer, for visibility against the mesh */
+  previewColor: string;
 }
 
 export interface CropStep {

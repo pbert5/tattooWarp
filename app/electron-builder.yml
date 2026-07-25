@@ -44,10 +44,13 @@ win:
 linux:
   icon: build/icon.png
   category: Graphics
+  # AppImage only: a single portable executable, no install step, which is
+  # the whole point (matches the win "portable" and mac "zip" targets below).
+  # A .deb was dropped — that's an installed package, not a "just run" one,
+  # and building it via fpm additionally requires project homepage/author
+  # metadata this app doesn't otherwise need.
   target:
     - target: AppImage
-      arch: [x64]
-    - target: deb
       arch: [x64]
 
 nsis:
@@ -56,3 +59,9 @@ nsis:
 
 publish:
   provider: github
+  # Set explicitly rather than relying on auto-detection from package.json's
+  # "repository" field or `git remote` — that detection looks for .git next
+  # to the checkout root, and failed in CI (app/ is a subdirectory of the
+  # repo, not the repo root) with "Cannot detect repository by .git/config".
+  owner: pbert5
+  repo: tattoowarp
